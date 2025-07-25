@@ -1,0 +1,620 @@
+# bidbuy-chatbot
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비드바이코리아 CS 챗봇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot-container {
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chatbot-header h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .chatbot-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .quick-menu {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .quick-menu h3 {
+            font-size: 14px;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .category-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .category-btn {
+            padding: 8px 4px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .category-btn:hover {
+            background: #FF6B6B;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .bot-message {
+            background: #f1f3f4;
+            color: #333;
+            align-self: flex-start;
+            margin-left: 40px;
+            position: relative;
+        }
+
+        .bot-message::before {
+            content: "🤖";
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            align-self: flex-end;
+            margin-right: 10px;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: #FF6B6B;
+        }
+
+        .send-btn {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .quick-reply {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+            border-radius: 15px;
+            padding: 8px 12px;
+            margin: 5px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-reply:hover {
+            background: #1976d2;
+            color: white;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 12px 16px;
+            background: #f1f3f4;
+            border-radius: 18px;
+            align-self: flex-start;
+            margin-left: 40px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .human-handoff {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .satisfaction-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .satisfaction-btn {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+        }
+
+        .satisfaction-btn.positive {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .satisfaction-btn.negative {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .satisfaction-btn:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="chatbot-container">
+        <div class="chatbot-header">
+            <div class="status-indicator"></div>
+            <h1>비드바이코리아 CS</h1>
+            <p>일본구매대행 전문상담 | 24시간 운영</p>
+        </div>
+
+        <div class="quick-menu">
+            <h3>🔥 자주 묻는 질문</h3>
+            <div class="category-buttons">
+                <button class="category-btn" onclick="selectCategory('배송')">📦 배송</button>
+                <button class="category-btn" onclick="selectCategory('경매대행')">🔨 경매대행</button>
+                <button class="category-btn" onclick="selectCategory('결제')">💳 결제</button>
+                <button class="category-btn" onclick="selectCategory('통관')">📋 통관</button>
+                <button class="category-btn" onclick="selectCategory('관세')">💰 관세</button>
+                <button class="category-btn" onclick="selectCategory('취소환불')">🔄 취소/환불</button>
+                <button class="category-btn" onclick="selectCategory('파손분실')">⚠️ 파손/분실</button>
+                <button class="category-btn" onclick="selectCategory('회원서비스')">👤 회원서비스</button>
+                <button class="category-btn" onclick="selectCategory('구매대행')">🛒 구매대행</button>
+            </div>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            <div class="bot-message">
+                안녕하세요! 비드바이코리아 CS 챗봇입니다. 🇯🇵<br>
+                일본구매대행 관련 궁금한 점을 언제든 물어보세요!<br><br>
+                <strong>💡 빠른 해결을 위해 위의 카테고리 버튼을 클릭해보세요!</strong><br>
+                <strong>🧮 관세 계산: "10만원 관세" 처럼 금액을 말하면 즉시 계산해드려요!</strong>
+            </div>
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span style="margin-left: 8px; font-size: 12px; color: #999;">답변 준비중...</span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" class="input-field" id="userInput" placeholder="궁금한 점을 입력해주세요..." maxlength="200">
+            <button class="send-btn" id="sendBtn">➤</button>
+        </div>
+    </div>
+
+    <script>
+        // FAQ 데이터베이스
+        var faqDB = {
+            배송: {
+                "배송비 결제하고 얼마나 있으면 받을 수 있나요": "항공배송의 경우 결제 후 3-5일, 선편배송의 경우 7-14일 소요됩니다. 통관 상황에 따라 1-2일 추가될 수 있습니다.",
+                "배송방법은 어떤게 있나요": "항공배송(빠름, 비쌈)과 선편배송(저렴, 느림) 두 가지가 있습니다. 급하지 않으시면 선편을 추천드립니다.",
+                "선편이랑 항공배송중에 어떤게 저렴한가요": "선편이 항공배송 대비 약 30-40% 저렴합니다. 다만 배송기간이 더 오래 걸립니다.",
+                "배송비는 얼마나 하나요?": "배송비는 무게와 부피에 따라 달라집니다. 항공배송: kg당 8,000-12,000원, 선편: kg당 3,000-5,000원입니다.",
+                "언제 받을 수 있나요?": "항공배송 3-5일, 선편배송 7-14일 소요됩니다. 일본 현지 구매 후 한국 발송까지의 시간입니다.",
+                "배송 추적은 어떻게 하나요?": "마이페이지 > 주문내역에서 운송장 번호로 실시간 추적 가능합니다. SMS로도 배송 상태를 알려드립니다."
+            },
+            경매대행: {
+                "보증금이 뭔가요": "경매 참여 시 필요한 예치금으로, 낙찰 시 상품대금에서 차감되고 미낙찰 시 전액 환불됩니다.",
+                "보증금에 대해서 설명해주세요": "야후경매 참여를 위한 보증금입니다. 최소 1만원부터 충전 가능하며, 낙찰가의 10-20% 수준으로 설정하시면 됩니다.",
+                "예약입찰이 뭔가요": "경매 종료 전 미리 최대입찰가를 설정하는 기능입니다. 자동으로 경쟁 입찰하여 편리합니다.",
+                "보증금이 필요한가요?": "네, 야후경매 참여 시 보증금이 필요합니다. 최소 1만원부터 충전 가능하며, 낙찰 시 상품대금에서 차감됩니다.",
+                "입찰은 어떻게 하나요?": "원하는 상품을 찾아 '입찰신청' 버튼을 클릭하고, 입찰가와 보증금을 설정하면 자동으로 입찰이 진행됩니다.",
+                "낙찰되면 어떻게 되나요?": "낙찰 시 SMS와 이메일로 알림을 보내드리며, 1차 결제(상품대금) 후 일본에서 구매하여 한국으로 배송합니다."
+            },
+            결제: {
+                "결제는 어떻게 하나요": "신용카드, 무통장입금, 계좌이체가 가능합니다. 1차 결제(상품대금+수수료), 2차 결제(배송비+부가비용)로 나뉩니다.",
+                "1차결제가 뭔가요": "상품대금 + 구매/경매 수수료를 먼저 결제하는 단계입니다. 일본 현지 구매를 위해 필요합니다.",
+                "2차결제가 뭔가요": "상품이 한국 창고에 도착한 후, 실제 무게/부피에 따른 배송비와 통관비용을 결제하는 단계입니다.",
+                "결제 방법이 궁금해요": "신용카드(국내 모든 카드), 무통장입금(국민/신한/우리은행), 계좌이체를 지원합니다. 해외결제도 가능합니다.",
+                "1차 2차 결제가 뭔가요?": "1차: 상품대금+수수료 선결제, 2차: 상품 도착 후 배송비+통관비 결제로 나누어 진행됩니다.",
+                "결제 취소는 어떻게 하나요?": "구매 취소 시 카드결제는 2-3일, 계좌이체는 당일 환불됩니다. 마이페이지에서 취소 신청 가능합니다."
+            },
+            통관: {
+                "통관은 누가 하나요": "저희가 지정한 관세사에서 대행합니다. 고객님은 별도 절차 없이 기다리시면 됩니다.",
+                "제 주문건 관세사는 어디인가요": "마이페이지 > 주문내역에서 담당 관세사 정보를 확인하실 수 있습니다.",
+                "우신관세사 번호는뭔가요": "우신관세사: 02-123-4567 (평일 9시-18시 운영)",
+                "통관 절차가 궁금해요": "한국 도착 → 세관 신고 → 관세 계산 → 관세 납부 → 국내 배송 순으로 진행됩니다. 모든 절차를 저희가 대행합니다.",
+                "관세사는 어디인가요?": "주요 협력 관세사: 우신관세사(02-123-4567), 한국통관(02-234-5678) 등입니다.",
+                "통관이 지연되면 어떻게 하나요?": "통관 지연 시 SMS로 알림드리며, 관세사에 직접 문의하여 신속 처리를 요청드립니다."
+            },
+            관세: {
+                "주류 관세는 얼마나 하나요": "주류는 개인통관한도(연 2회, 각 1병)를 초과하면 높은 세율이 적용됩니다. 사전 문의 필수입니다.",
+                "관세는 어떻게 내나요": "통관 시 관세사에서 자동 계산되어 2차 결제에 포함됩니다. 별도 납부 절차는 없습니다.",
+                "관세 계산법을 알려주세요": "💰 관세 계산법 완벽 가이드<br><br>1️⃣ 기본 공식<br>관세 = (상품가격 + 운송비) × 관세율 × 환율<br><br>2️⃣ 개인통관 기준<br>• $150 이하: 관세 면제<br>• $150-$600: 간이세율 적용<br>• $600 초과: 일반세율 적용<br><br>3️⃣ 부가세 추가<br>(관세 포함 총액) × 10% 부가세",
+                "관세 면제 한도가 궁금해요": "$150(약 20만원) 이하 구매 시 관세가 면제됩니다. 부가세(10%)만 부과됩니다.",
+                "브랜드품 관세는 어떻게 되나요": "명품 브랜드는 $150 면제 한도와 관계없이 관세가 부과될 수 있습니다. 정품 증명서가 필요합니다."
+            },
+            취소환불: {
+                "낙찰 후에 취소할 수 있나요": "원칙적으로 불가능합니다. 단, 상품 하자나 판매자 귀책사유가 있는 경우에만 취소 가능합니다.",
+                "보증금 환불은 어떻게하나요": "마이페이지 → 나의 계좌 관리 → 환불 신청에서 처리 가능합니다. 환불계좌 등록 필수입니다.",
+                "취소는 어떻게 하나요?": "마이페이지 > 주문내역에서 '취소신청' 버튼으로 신청 가능합니다. 상품 상태에 따라 취소 가능 여부가 결정됩니다.",
+                "환불 받고 싶어요": "취소 승인 후 카드결제는 2-3일, 계좌이체는 당일 환불됩니다. 환불계좌 등록이 필요합니다.",
+                "교환이 가능한가요?": "상품 하자가 있는 경우에만 교환 가능합니다. 단순 변심으로는 교환이 어렵습니다."
+            },
+            파손분실: {
+                "파손 되서 도착했는데 어떻게 하나요": "도착 즉시 사진 촬영 후 고객센터에 신고해주세요. 보험 처리를 통해 보상받으실 수 있습니다.",
+                "최대보상한도를 알고싶어요": "상품가격 기준 최대 $100까지 보상 가능합니다. 고가품은 사전에 별도 보험 가입 권장합니다.",
+                "상품이 파손됐어요": "즉시 사진을 찍어 고객센터(02-123-4567)로 신고해주세요. 택배사 보험으로 보상처리 해드립니다.",
+                "분실 시 어떻게 하나요?": "배송 중 분실의 경우 택배사에 배상 요구하여 상품가액을 보상해드립니다. 최대 $100까지 가능합니다.",
+                "보상은 얼마나 받나요?": "상품 구매가 기준으로 최대 $100(약 13만원)까지 보상 가능합니다. 영수증과 사진이 필요합니다."
+            },
+            회원서비스: {
+                "회원가입은 어떻게 하나요": "홈페이지 우측 상단 '회원가입' 버튼 클릭 후 이메일 인증으로 간편 가입 가능합니다.",
+                "회원등급은 어떤게 있나요": "일반, 실버, 골드, VIP 등급이 있으며, 누적 구매금액에 따라 수수료 할인 혜택이 제공됩니다.",
+                "회원가입 방법": "이메일 주소만 있으면 1분 만에 가입 가능합니다. 별도 인증서나 복잡한 절차는 없습니다.",
+                "등급 혜택이 궁금해요": "실버(누적 50만원): 수수료 5% 할인, 골드(200만원): 10% 할인, VIP(500만원): 15% 할인입니다.",
+                "쿠폰은 어디서 받나요?": "마이페이지 > 쿠폰함에서 매월 1일 신규 쿠폰을 다운받으실 수 있습니다."
+            },
+            구매대행: {
+                "메루카리 구매신청은 어떻게 하나요": "상품 URL 복사 → 구매신청 → URL 붙여넣기 → 수량/옵션 선택 → 신청 완료",
+                "셀프구매신청은 어떻게 하나요": "회원가입 후 마이페이지에서 '셀프구매' 메뉴 이용 시 수수료가 더 저렴합니다.",
+                "구매신청 방법": "원하는 상품의 URL을 복사해서 '구매신청' 페이지에 붙여넣고 수량을 선택하면 됩니다.",
+                "어떤 사이트에서 살 수 있나요?": "메루카리, 라쿠텐, 아마존 재팬, 야후쇼핑 등 일본 내 대부분 쇼핑몰에서 구매 가능합니다.",
+                "수수료는 얼마인가요?": "일반 구매대행: 상품가의 10%, 셀프구매: 5%, 경매대행: 낙찰가의 8% 수수료입니다."
+            }
+        };
+
+        // 카테고리별 자주 묻는 질문 (FAQ 데이터베이스와 정확히 매칭)
+        var categoryQuestions = {
+            배송: ["배송비는 얼마나 하나요?", "언제 받을 수 있나요?", "배송 추적은 어떻게 하나요?"],
+            경매대행: ["보증금이 필요한가요?", "입찰은 어떻게 하나요?", "낙찰되면 어떻게 되나요?"],
+            결제: ["결제 방법이 궁금해요", "1차 2차 결제가 뭔가요?", "결제 취소는 어떻게 하나요?"],
+            통관: ["통관 절차가 궁금해요", "관세사는 어디인가요?", "통관이 지연되면 어떻게 하나요?"],
+            관세: ["관세 계산법을 알려주세요", "관세 면제 한도가 궁금해요", "브랜드품 관세는 어떻게 되나요"],
+            취소환불: ["취소는 어떻게 하나요?", "환불 받고 싶어요", "교환이 가능한가요?"],
+            파손분실: ["상품이 파손됐어요", "분실 시 어떻게 하나요?", "보상은 얼마나 받나요?"],
+            회원서비스: ["회원가입 방법", "등급 혜택이 궁금해요", "쿠폰은 어디서 받나요?"],
+            구매대행: ["구매신청 방법", "어떤 사이트에서 살 수 있나요?", "수수료는 얼마인가요?"]
+        };
+
+        // DOM 요소들
+        var chatArea = document.getElementById('chatArea');
+        var userInput = document.getElementById('userInput');
+        var sendBtn = document.getElementById('sendBtn');
+        var typingIndicator = document.getElementById('typingIndicator');
+
+        // 관세 계산 함수
+        function calculateTax(amount) {
+            var usdAmount = Math.round(amount / 1300);
+            var result = {};
+            
+            if (usdAmount <= 150) {
+                result.exemption = true;
+                result.customsDuty = 0;
+                result.vat = Math.round(amount * 0.1);
+                result.total = result.vat;
+                result.message = "✅ 관세 면제 적용 ($150 이하)<br>🔸 관세: 0원<br>🔸 부가세: " + result.vat.toLocaleString() + "원<br>💡 총 예상 세금: " + result.total.toLocaleString() + "원";
+            } else {
+                result.exemption = false;
+                result.customsDuty = Math.round(amount * 0.2);
+                result.vat = Math.round((amount + result.customsDuty) * 0.1);
+                result.total = result.customsDuty + result.vat;
+                result.message = "🔸 적용세율: 20%<br>🔸 관세: " + result.customsDuty.toLocaleString() + "원<br>🔸 부가세: " + result.vat.toLocaleString() + "원<br>💡 총 예상 세금: " + result.total.toLocaleString() + "원";
+            }
+            
+            return result;
+        }
+
+        // 메시지 추가 함수
+        function addMessage(message, sender) {
+            var messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + sender + '-message';
+            messageDiv.innerHTML = message;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // 타이핑 표시/숨김
+        function showTyping() {
+            typingIndicator.style.display = 'flex';
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.style.display = 'none';
+        }
+
+        // 답변 찾기
+        function findAnswer(question) {
+            var lowerQuestion = question.toLowerCase();
+            
+            // 관세 계산 체크
+            if ((lowerQuestion.includes('관세') || lowerQuestion.includes('세금')) && /\d/.test(lowerQuestion)) {
+                var numbers = lowerQuestion.match(/\d+/g);
+                if (numbers && numbers.length > 0) {
+                    var amount = parseInt(numbers[0]);
+                    if (amount > 1000) {
+                        var result = calculateTax(amount);
+                        return {
+                            answer: "💰 관세 계산 결과<br><br>🔸 상품금액(USD): $" + Math.round(amount/1300) + "<br>" + result.message,
+                            category: "관세",
+                            isCalculation: true
+                        };
+                    }
+                }
+            }
+
+            // FAQ 정확한 매칭 우선
+            for (var category in faqDB) {
+                for (var faq in faqDB[category]) {
+                    var faqLower = faq.toLowerCase();
+                    // 정확한 매칭
+                    if (lowerQuestion === faqLower) {
+                        return {
+                            answer: faqDB[category][faq],
+                            category: category
+                        };
+                    }
+                }
+            }
+
+            // 부분 매칭
+            for (var category in faqDB) {
+                for (var faq in faqDB[category]) {
+                    var faqLower = faq.toLowerCase();
+                    // 키워드 기반 매칭
+                    if (lowerQuestion.includes(faqLower.substring(0, 15)) || 
+                        faqLower.includes(lowerQuestion.substring(0, 10))) {
+                        return {
+                            answer: faqDB[category][faq],
+                            category: category
+                        };
+                    }
+                }
+            }
+
+            // 키워드 기반 검색
+            var keywords = {
+                배송: ['배송', '받', '도착', '언제', '며칠', '날짜', '추적'],
+                경매대행: ['경매', '입찰', '보증금', '낙찰', '야후', '옥션'],
+                결제: ['결제', '카드', '계좌', '입금', '1차', '2차', '페이'],
+                통관: ['통관', '관세사', '세관', '신고'],
+                관세: ['관세', '세금', '계산법', '면제', '브랜드'],
+                취소환불: ['취소', '환불', '반품', '교환'],
+                파손분실: ['파손', '분실', '깨짐', '보상'],
+                회원서비스: ['회원', '가입', '등급', '쿠폰'],
+                구매대행: ['구매', '메루카리', '신청', '쇼핑몰']
+            };
+
+            for (var cat in keywords) {
+                var catKeywords = keywords[cat];
+                for (var i = 0; i < catKeywords.length; i++) {
+                    if (lowerQuestion.includes(catKeywords[i])) {
+                        // 해당 카테고리의 첫 번째 FAQ 반환
+                        for (var faq in faqDB[cat]) {
+                            return {
+                                answer: faqDB[cat][faq],
+                                category: cat
+                            };
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        // 카테고리 선택
+        function selectCategory(category) {
+            addMessage(category + ' 관련 질문이 있어요', 'user');
+            
+            setTimeout(function() {
+                var questions = categoryQuestions[category] || [];
+                var response = category + ' 관련하여 자주 묻는 질문들입니다:<br><br>';
+                for (var i = 0; i < questions.length; i++) {
+                    response += (i + 1) + '. ' + questions[i] + '<br>';
+                }
+                response += '<br>구체적인 질문을 입력해주시면 더 자세한 답변을 드릴게요! 😊';
+                
+                addMessage(response, 'bot');
+                
+                // 퀵 리플라이 추가
+                var quickDiv = document.createElement('div');
+                quickDiv.style.marginTop = '10px';
+                for (var j = 0; j < questions.length; j++) {
+                    var btn = document.createElement('span');
+                    btn.className = 'quick-reply';
+                    btn.textContent = questions[j];
+                    btn.onclick = (function(q) {
+                        return function() { 
+                            handleMessage(q); 
+                        };
+                    })(questions[j]);
+                    quickDiv.appendChild(btn);
+                }
+                
+                var lastMessage = chatArea.lastElementChild;
+                lastMessage.appendChild(quickDiv);
+            }, 800);
+        }
+
+        // 메시지 처리
+        function handleMessage(message) {
+            if (!message.trim()) return;
+            
+            addMessage(message, 'user');
+            showTyping();
+            
+            setTimeout(function() {
+                hideTyping();
+                
+                var result = findAnswer(message);
+                if (result) {
+                    addMessage(result.answer, 'bot');
+                    
+                    if (result.isCalculation) {
+                        setTimeout(function() {
+                            var calcDiv = document.createElement('div');
+                            calcDiv.className = 'message bot-message';
+                            calcDiv.innerHTML = '📊 빠른 계산기: 다른 금액도 궁금하시면 클릭하세요!<div style="margin-top: 10px;"><span class="quick-reply" onclick="handleMessage(\'5만원 관세\')">5만원</span><span class="quick-reply" onclick="handleMessage(\'10만원 관세\')">10만원</span><span class="quick-reply" onclick="handleMessage(\'20만원 관세\')">20만원</span></div>';
+                            chatArea.appendChild(calcDiv);
+                            chatArea.scrollTop = chatArea.scrollHeight;
+                        }, 1000);
+                    }
+                } else {
+                    addMessage('죄송합니다. 정확한 답변을 위해 전문 상담원 연결을 권장드립니다.<br><br><div class="human-handoff">🏢 비드바이코리아 고객센터<br>📞 전화: 02-123-4567<br>💬 카카오톡: @비드바이코리아<br>⏰ 운영시간: 평일 9시-18시</div>', 'bot');
+                }
+            }, 1200);
+        }
+
+        // 이벤트 리스너
+        sendBtn.addEventListener('click', function() {
+            var message = userInput.value.trim();
+            if (message) {
+                handleMessage(message);
+                userInput.value = '';
+            }
+        });
+
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>드바이챗봇
